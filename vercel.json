@@ -1,0 +1,9 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/generate-prompts",
+      "schedule": "0 6 * * *"
+    }
+  ]
+}
+

@@ -1,0 +1,112 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./prisma/dev.db" // Local file for Prisma schema management only
+  // Actual database operations use libsql client (see lib/prisma.ts)
+}
+
+model User {
+  id            String   @id @default(cuid())
+  clerkId       String   @unique // Clerk user ID
+  email         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  preferences   UserPreferences?
+  entries       JournalEntry[]
+}
+
+model JournalEntry {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  title         String
+  slug          String
+  content       String   // HTML content from the editor
+  
+  isPublished   Boolean  @default(false)
+  publishedAt   DateTime?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@unique([userId, slug]) // Slugs must be unique per user
+  @@index([userId])
+  @@index([slug])
+}
+
+model UserPreferences {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Onboarding form data
+  writingReason String?  // Why do you want to write? (single select)
+  interests     String   // JSON array of selected interests (multi-select)
+  writingLevel  String?  // How would you describe your writing level? (single select)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ============================================================================
+// Writing Prompt Recommendation Engine
+// ============================================================================
+
+model WritingPrompt {
+  id            String    @id @default(cuid())
+  userId        String
+  
+  // Content
+  interest      String    // The interest/topic this prompt is based on
+  hook          String    // The compelling headline/title
+  blurb         String    // HTML-formatted exploration piece
+  imageUrl      String?   // URL to generated abstract image
+  
+  // Metadata (stored as JSON strings)
+  tags          String    @default("[]")  // JSON array of topic tags
+  suggestedAngles String  @default("[]")  // JSON array of writing angles
+  sources       String    @default("[]")  // JSON array of source URLs
+  artStyle      String?   // The art style used for image generation
+  
+  // Status: pending, generating, ready, used, dismissed, failed
+  status        String    @default("pending")
+  usedAt        DateTime?
+  dismissedAt   DateTime?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([userId])
+  @@index([status])
+}
+
+model PromptGenerationJob {
+  id                    String    @id @default(cuid())
+  userId                String
+  
+  // Job details
+  selectedInterests     String    // JSON array of 3 selected interests
+  status                String    @default("pending") // pending, processing, completed, failed, cancelled
+  error                 String?
+  
+  // Progress tracking
+  researchCompleted     Int       @default(0)
+  compositionCompleted  Int       @default(0)
+  visualsCompleted      Int       @default(0)
+  
+  startedAt             DateTime?
+  completedAt           DateTime?
+  createdAt             DateTime  @default(now())
+  
+  @@index([userId])
+  @@index([status])
+}
+
