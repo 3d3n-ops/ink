@@ -6,6 +6,7 @@ import RichTextEditor from "../components/RichTextEditor";
 import Sidebar from "../components/Sidebar";
 import { FaMedium, FaInstagram, FaXTwitter } from "react-icons/fa6";
 import { SiSubstack } from "react-icons/si";
+import { useOnboardingCheck } from "../hooks/useOnboardingCheck";
 
 // Generate slug from title
 function generateSlug(title: string): string {
@@ -31,6 +32,7 @@ const InkIcon = () => (
 function WritePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { isChecking, isOnboarded } = useOnboardingCheck();
   const editSlug = searchParams.get("edit");
   const promptTitle = searchParams.get("title");
   const promptId = searchParams.get("prompt");
@@ -49,6 +51,15 @@ function WritePageContent() {
   const shareMenuRef = useRef<HTMLDivElement>(null);
 
   const isEditMode = Boolean(editSlug);
+
+  // Show loading while checking onboarding status
+  if (isChecking || !isOnboarded) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#FFFAF0]">
+        <div className="animate-pulse text-[#171717]/40">Loading...</div>
+      </div>
+    );
+  }
 
   // Pre-fill title from prompt if provided
   useEffect(() => {

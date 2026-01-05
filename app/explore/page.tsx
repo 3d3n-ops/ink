@@ -1,6 +1,7 @@
 "use client";
 
 import Sidebar from "../components/Sidebar";
+import { useOnboardingCheck } from "../hooks/useOnboardingCheck";
 
 // Placeholder data for published writings on Ink
 const featuredWritings = [
@@ -72,6 +73,17 @@ const topics = [
 ];
 
 export default function ExplorePage() {
+  const { isChecking, isOnboarded } = useOnboardingCheck();
+
+  // Show loading while checking onboarding status
+  if (isChecking || !isOnboarded) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#FFFAF0]">
+        <div className="animate-pulse text-[#171717]/40">Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen bg-[#FFFAF0]">
       <Sidebar />

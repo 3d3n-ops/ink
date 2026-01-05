@@ -5,21 +5,26 @@ const isPublicRoute = createRouteMatcher([
   "/",
   "/sign-in(.*)",
   "/sign-up(.*)",
+  "/p/(.*)", // Public published entries
 ]);
 
-// Routes that signed-in users should be redirected away from
-const isAuthRedirectRoute = createRouteMatcher([
-  "/",
+const isOnboardingRoute = createRouteMatcher([
   "/onboarding(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
   const { userId } = await auth();
   
-  // If user is signed in and trying to access home or onboarding, redirect to dashboard
-  if (userId && isAuthRedirectRoute(request)) {
+  // If user is signed in and on landing page, redirect to dashboard
+  // Dashboard will check onboarding status and redirect if needed
+  if (userId && request.nextUrl.pathname === "/") {
     const dashboardUrl = new URL("/dashboard", request.url);
     return NextResponse.redirect(dashboardUrl);
+  }
+  
+  // Allow onboarding routes for signed-in users (they need to complete it)
+  if (userId && isOnboardingRoute(request)) {
+    return NextResponse.next();
   }
   
   // Protect non-public routes

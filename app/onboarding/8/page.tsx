@@ -32,9 +32,9 @@ export default function OnboardingPage8() {
     
     triggerPromptGeneration();
 
-    // Redirect to home after 3 seconds
+    // Redirect to dashboard after 3 seconds
     const timer = setTimeout(() => {
-      router.push("/home");
+      router.push("/dashboard");
     }, 3000);
 
     return () => clearTimeout(timer);
@@ -56,7 +56,7 @@ export default function OnboardingPage8() {
           <FadeInSection delay={1000}>
             <div className="mt-12 flex justify-center">
               <button
-                onClick={() => router.push("/home")}
+                onClick={() => router.push("/dashboard")}
                 className="rounded-[20px] bg-[#FEBC2F] px-8 py-4 text-lg font-bold text-[#171717] transition-opacity hover:opacity-90 md:px-12 md:py-5 md:text-xl"
               >
                 Begin

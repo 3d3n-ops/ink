@@ -6,6 +6,7 @@ import Sidebar from "../components/Sidebar";
 import WritingEntry from "../components/WritingEntry";
 import PromptCard from "../components/PromptCard";
 import PromptSlideshow from "../components/PromptSlideshow";
+import { useOnboardingCheck } from "../hooks/useOnboardingCheck";
 
 interface JournalEntry {
   id: string;
@@ -50,6 +51,7 @@ function formatDate(dateString: string): string {
 
 export default function Dashboard() {
   const router = useRouter();
+  const { isChecking, isOnboarded } = useOnboardingCheck();
   const [writings, setWritings] = useState<JournalEntry[]>([]);
   const [prompts, setPrompts] = useState<WritingPrompt[]>([]);
   const [isLoadingEntries, setIsLoadingEntries] = useState(true);
@@ -57,6 +59,15 @@ export default function Dashboard() {
   const [selectedPrompt, setSelectedPrompt] = useState<WritingPrompt | null>(null);
   const [generationJob, setGenerationJob] = useState<JobStatus | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Show loading while checking onboarding status
+  if (isChecking || !isOnboarded) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#FFFAF0]">
+        <div className="animate-pulse text-[#171717]/40">Loading...</div>
+      </div>
+    );
+  }
 
   // Fetch journal entries
   useEffect(() => {
