@@ -131,31 +131,100 @@ export class PromptComposerAgent {
    * Parse the composition from model output
    */
   private parseComposition(content: string, research: ResearchReport): PromptContent {
-    // Extract JSON from response
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('Could not parse composition JSON');
+    // Try multiple approaches to extract JSON
+    let parsed: Record<string, unknown> | null = null;
+    
+    // Approach 1: Look for JSON block between ```json and ```
+    const jsonBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (jsonBlockMatch) {
+      try {
+        parsed = JSON.parse(jsonBlockMatch[1].trim());
+      } catch {
+        // Continue to next approach
+      }
+    }
+    
+    // Approach 2: Find the outermost JSON object
+    if (!parsed) {
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          parsed = JSON.parse(jsonMatch[0]);
+        } catch {
+          // Try to fix common JSON issues
+          try {
+            const fixed = jsonMatch[0]
+              .replace(/,\s*}/g, '}') // Remove trailing commas
+              .replace(/,\s*]/g, ']') // Remove trailing commas in arrays
+              .replace(/'/g, '"'); // Replace single quotes
+            parsed = JSON.parse(fixed);
+          } catch {
+            // Continue to fallback
+          }
+        }
+      }
+    }
+    
+    // Approach 3: Try to extract fields manually if JSON parsing fails
+    if (!parsed) {
+      const hook = this.extractField(content, 'hook') || 
+                   this.extractQuotedString(content, /hook['":\s]+["']([^"']+)["']/i);
+      const blurb = this.extractField(content, 'blurb') ||
+                    this.extractHtmlContent(content);
+      
+      if (hook) {
+        parsed = {
+          hook,
+          blurb: blurb || this.createMinimalBlurb(research),
+          tags: [research.interest.toLowerCase().replace(/\s+/g, '-')],
+          suggestedAngles: research.interestingAngles.slice(0, 3),
+        };
+      }
+    }
+    
+    if (!parsed) {
+      // Last resort: use fallback composition
+      console.warn('Could not parse composition, using fallback');
+      return this.createFallbackComposition(research);
     }
 
-    try {
-      const parsed = JSON.parse(jsonMatch[0]);
-      
-      // Validate hook length
-      const hook = this.validateHook(parsed.hook, research.interest);
-      
-      // Validate and clean blurb
-      const blurb = this.validateBlurb(parsed.blurb, research);
-      
-      return {
-        hook,
-        blurb,
-        tags: this.ensureArray(parsed.tags).slice(0, 5),
-        suggestedAngles: this.ensureArray(parsed.suggestedAngles).slice(0, 3),
-      };
-    } catch (parseError) {
-      console.error('Failed to parse composition JSON:', parseError);
-      throw new Error('Invalid composition format');
-    }
+    // Validate hook length
+    const hook = this.validateHook(parsed.hook as string, research.interest);
+    
+    // Validate and clean blurb
+    const blurb = this.validateBlurb(parsed.blurb as string, research);
+    
+    return {
+      hook,
+      blurb,
+      tags: this.ensureArray(parsed.tags).slice(0, 5),
+      suggestedAngles: this.ensureArray(parsed.suggestedAngles).slice(0, 3),
+    };
+  }
+  
+  /**
+   * Extract a field value from text
+   */
+  private extractField(content: string, field: string): string | null {
+    const regex = new RegExp(`["']?${field}["']?\\s*:\\s*["']([^"']+)["']`, 'i');
+    const match = content.match(regex);
+    return match ? match[1] : null;
+  }
+  
+  /**
+   * Extract a quoted string using a regex
+   */
+  private extractQuotedString(content: string, regex: RegExp): string | null {
+    const match = content.match(regex);
+    return match ? match[1] : null;
+  }
+  
+  /**
+   * Extract HTML content (paragraphs) from text
+   */
+  private extractHtmlContent(content: string): string | null {
+    const htmlMatch = content.match(/<p>[\s\S]*<\/p>/);
+    return htmlMatch ? htmlMatch[0] : null;
   }
 
   /**

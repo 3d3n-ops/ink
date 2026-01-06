@@ -28,6 +28,10 @@ export default function PromptSlideshow({
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
+    // Random duration between 5-8 seconds
+    const showDuration = 5000 + Math.random() * 3000; // 5000-8000ms
+    const progressSteps = Math.ceil(showDuration / 50); // Update progress every 50ms
+    
     // Phase 1: Enter animation (0.5s)
     const enterTimeout = setTimeout(() => {
       setPhase('showing');
@@ -40,14 +44,14 @@ export default function PromptSlideshow({
           clearInterval(progressInterval);
           return 100;
         }
-        return prev + 2; // 50 steps over ~2.5s
+        return prev + (100 / progressSteps);
       });
     }, 50);
 
-    // Phase 2: Show for 3 seconds total, then exit
+    // Phase 2: Show for random duration (5-8 seconds), then exit
     const showTimeout = setTimeout(() => {
       setPhase('exiting');
-    }, 3500);
+    }, 500 + showDuration);
 
     // Phase 3: Exit animation then navigate
     const exitTimeout = setTimeout(async () => {
@@ -61,7 +65,7 @@ export default function PromptSlideshow({
       // Navigate to editor with prompt data
       router.push(`/write?prompt=${promptId}&title=${encodeURIComponent(hook)}`);
       onComplete();
-    }, 4000);
+    }, 500 + showDuration + 500); // Enter + show + exit
 
     return () => {
       clearTimeout(enterTimeout);

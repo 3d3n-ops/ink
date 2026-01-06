@@ -2,24 +2,39 @@
  * Writing Prompt Recommendation Engine - Configuration
  */
 
+// Perplexity AI Configuration for Research Agent
+export const PERPLEXITY_CONFIG = {
+  baseUrl: 'https://api.perplexity.ai',
+  
+  models: {
+    // Sonar - Fast online model with web search
+    research: process.env.PERPLEXITY_MODEL || 'sonar',
+    // Sonar Pro - More powerful research model
+    researchPro: 'sonar-pro',
+  },
+  
+  // Request configuration
+  requests: {
+    maxRetries: 2,
+    retryDelayMs: 1000,
+    timeoutMs: 30000, // 30 seconds - Perplexity is fast
+  },
+} as const;
+
 export const OPENROUTER_CONFIG = {
   baseUrl: 'https://openrouter.ai/api/v1',
   
   models: {
-    // Claude Sonnet 4 - Best for research with web search capabilities
-    research: process.env.OPENROUTER_RESEARCH_MODEL || 'anthropic/claude-sonnet-4',
+    // Gemini 3 Flash - Fast, cost-effective composition
+    composer: process.env.OPENROUTER_COMPOSER_MODEL || 'google/gemini-3-flash-preview',
     
-    // GPT-5 - Superior creative writing and hook composition
-    composer: process.env.OPENROUTER_COMPOSER_MODEL || 'openai/gpt-5',
-    
-    // FLUX 1.1 Pro - High-quality artistic image generation
+    // FLUX 1.1 Pro - High-quality artistic image generation (legacy, now using Runware)
     visual: process.env.OPENROUTER_VISUAL_MODEL || 'black-forest-labs/flux-1.1-pro',
   },
   
   // Fallback models if primary unavailable
   fallbacks: {
-    research: 'anthropic/claude-3.5-sonnet',
-    composer: 'openai/gpt-4-turbo',
+    composer: 'google/gemini-2.0-flash-001',
     visual: 'black-forest-labs/flux-schnell',
   },
   

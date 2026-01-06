@@ -30,10 +30,14 @@ class OpenRouterClient {
    * Common headers for all OpenRouter requests
    */
   private getHeaders(): Record<string, string> {
+    const referer = process.env.NODE_ENV === 'production'
+      ? 'https://try-ink.app'
+      : 'http://localhost:3000';
+    
     return {
       'Authorization': `Bearer ${this.apiKey}`,
       'Content-Type': 'application/json',
-      'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://ink-app.com',
+      'HTTP-Referer': referer,
       'X-Title': 'Ink - Writing App',
     };
   }
@@ -254,7 +258,7 @@ class OpenRouterClient {
    * Get the best available model from primary and fallback
    */
   async getAvailableModel(
-    type: 'research' | 'composer' | 'visual'
+    type: 'composer' | 'visual'
   ): Promise<string> {
     const primary = OPENROUTER_CONFIG.models[type];
     const fallback = OPENROUTER_CONFIG.fallbacks[type];

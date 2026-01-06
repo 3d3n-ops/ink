@@ -62,7 +62,7 @@ export type ArtStyle =
 
 export interface VisualPromptConfig {
   topic: string;
-  hook: string;
+  context?: string;  // Optional context (research summary, hook, etc.) to influence the visual
   artStyle: ArtStyle;
   mood?: string;
 }

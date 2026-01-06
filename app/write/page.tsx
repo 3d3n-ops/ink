@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef, Suspense } from "react";
 import RichTextEditor from "../components/RichTextEditor";
 import Sidebar from "../components/Sidebar";
+import PromptViewer from "../components/PromptViewer";
 import { FaMedium, FaInstagram, FaXTwitter } from "react-icons/fa6";
 import { SiSubstack } from "react-icons/si";
 import { useOnboardingCheck } from "../hooks/useOnboardingCheck";
@@ -47,19 +48,11 @@ function WritePageContent() {
   const [error, setError] = useState("");
   const [wordCount, setWordCount] = useState(0);
   const [showShareMenu, setShowShareMenu] = useState(false);
+  const [showPromptViewer, setShowPromptViewer] = useState(false);
   const [editorKey, setEditorKey] = useState(0);
   const shareMenuRef = useRef<HTMLDivElement>(null);
 
   const isEditMode = Boolean(editSlug);
-
-  // Show loading while checking onboarding status
-  if (isChecking || !isOnboarded) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#FFFAF0]">
-        <div className="animate-pulse text-[#171717]/40">Loading...</div>
-      </div>
-    );
-  }
 
   // Pre-fill title from prompt if provided
   useEffect(() => {
@@ -166,6 +159,15 @@ function WritePageContent() {
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "ink.app";
 
+  // Show loading while checking onboarding status
+  if (isChecking || !isOnboarded) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#FFFAF0]">
+        <div className="animate-pulse text-[#171717]/40">Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen bg-[#FFFAF0]">
       <Sidebar />
@@ -203,6 +205,29 @@ function WritePageContent() {
 
               {error && (
                 <span className="text-sm text-red-500">{error}</span>
+              )}
+
+              {/* View Prompt Button - only show if promptId exists */}
+              {promptId && (
+                <button
+                  onClick={() => setShowPromptViewer(true)}
+                  className="flex items-center gap-1.5 rounded-[20px] border border-[#171717]/20 px-4 py-2 text-sm font-medium text-[#171717] transition-colors hover:bg-[#171717]/5"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                  View Prompt
+                </button>
               )}
 
               {/* Share Button with Dropdown */}
@@ -374,6 +399,14 @@ function WritePageContent() {
           </div>
         </div>
       </main>
+
+      {/* Prompt Viewer Modal */}
+      {showPromptViewer && promptId && (
+        <PromptViewer
+          promptId={promptId}
+          onClose={() => setShowPromptViewer(false)}
+        />
+      )}
     </div>
   );
 }

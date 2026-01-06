@@ -1,11 +1,11 @@
 /**
  * Visual Composer Agent
- * Uses FLUX via OpenRouter to generate abstract, artistic images
+ * Uses Runware AI to generate abstract, artistic images
  * that complement the writing prompts.
  */
 
-import { getOpenRouterClient } from '../client';
-import { OPENROUTER_CONFIG, VISUAL_COMPOSER_CONFIG } from '../config';
+import { Runware } from '@runware/sdk-js';
+import { VISUAL_COMPOSER_CONFIG } from '../config';
 import type { ArtStyle, GeneratedVisual, VisualPromptConfig } from '../types';
 
 // All available art styles
@@ -60,43 +60,84 @@ function selectRandomArtStyle(): ArtStyle {
 
 /**
  * Build the image generation prompt
+ * Uses both topic and context (hook/summary) to create more relevant visuals
  */
 function buildImagePrompt(config: VisualPromptConfig): string {
   const styleConfig = VISUAL_COMPOSER_CONFIG.artStyles[config.artStyle];
   const moods = getMoodForTopic(config.topic);
   const selectedMoods = moods.slice(0, 3).join(', ');
   
+  // Extract key themes from context if provided (limit to first 100 chars for prompt efficiency)
+  const contextHint = config.context 
+    ? `. Inspired by: ${config.context.substring(0, 100)}` 
+    : '';
+  
   // Create an abstract prompt that captures the essence without being too literal
-  const prompt = `Abstract artistic interpretation of the concept: "${config.topic}"
-
-Style: ${styleConfig.description}
-Mood: ${selectedMoods}
-Artistic modifiers: ${styleConfig.modifiers}
-
-Important:
-- Create an ABSTRACT representation, not literal imagery
-- Focus on evoking emotion and thought
-- Use the art style consistently throughout
-- High quality, professional artistic composition
-- Suitable as a header image for an intellectual essay
-- No text, no letters, no words in the image
-- Clean composition with visual interest`;
+  const prompt = `Abstract artistic interpretation of the concept: "${config.topic}"${contextHint}. Style: ${styleConfig.description}. Mood: ${selectedMoods}. Artistic modifiers: ${styleConfig.modifiers}. Create an ABSTRACT representation, not literal imagery. Focus on evoking emotion and thought. High quality, professional artistic composition. Suitable as a header image for an intellectual essay. No text, no letters, no words in the image. Clean composition with visual interest.`;
 
   return prompt;
 }
 
 /**
- * Visual Composer Agent - generates abstract images for prompts
+ * Visual Composer Agent - generates abstract images for prompts using Runware AI
  */
 export class VisualComposerAgent {
-  private client = getOpenRouterClient();
+  private runware: InstanceType<typeof Runware> | null = null;
+  private initializationPromise: Promise<InstanceType<typeof Runware>> | null = null;
 
   /**
-   * Generate an abstract visual for a writing prompt
+   * Initialize Runware client with proper synchronization
+   * Uses a promise-based lock to prevent race conditions when multiple
+   * parallel pipelines call generate() simultaneously
+   */
+  private async getClient(): Promise<InstanceType<typeof Runware>> {
+    // If already initialized, return immediately
+    if (this.runware) {
+      return this.runware;
+    }
+
+    // If initialization is in progress, wait for it
+    if (this.initializationPromise) {
+      return this.initializationPromise;
+    }
+
+    // Start initialization and store the promise so concurrent calls can wait on it
+    this.initializationPromise = this.initializeClient();
+    
+    try {
+      this.runware = await this.initializationPromise;
+      return this.runware;
+    } catch (error) {
+      // Reset on failure so future calls can retry
+      this.initializationPromise = null;
+      throw error;
+    }
+  }
+
+  /**
+   * Internal initialization logic - only called once
+   */
+  private async initializeClient(): Promise<InstanceType<typeof Runware>> {
+    const apiKey = process.env.RUNWARE_API_KEY;
+    if (!apiKey) {
+      throw new Error('RUNWARE_API_KEY environment variable is required');
+    }
+
+    const client = new Runware({ apiKey });
+    await client.ensureConnection();
+    return client;
+  }
+
+  /**
+   * Generate an abstract visual for a writing prompt using Runware AI
+   * 
+   * @param topic - The main topic/interest (e.g., "Artificial Intelligence")
+   * @param context - Optional context like research summary or hook to influence the visual
+   * @param artStyle - Optional specific art style, or random if not specified
    */
   async generate(
     topic: string,
-    hook: string,
+    context?: string,
     artStyle?: ArtStyle
   ): Promise<GeneratedVisual> {
     // Select art style (random if not specified)
@@ -104,7 +145,7 @@ export class VisualComposerAgent {
     
     const config: VisualPromptConfig = {
       topic,
-      hook,
+      context,
       artStyle: selectedStyle,
       mood: getMoodForTopic(topic).join(', '),
     };
@@ -112,89 +153,41 @@ export class VisualComposerAgent {
     const imagePrompt = buildImagePrompt(config);
 
     try {
-      const response = await this.client.generateImage(imagePrompt, {
-        model: OPENROUTER_CONFIG.models.visual,
-        size: VISUAL_COMPOSER_CONFIG.size,
-        n: 1,
+      const runware = await this.getClient();
+      
+      // Generate image using Runware AI
+      const images = await runware.imageInference({
+        positivePrompt: imagePrompt,
+        negativePrompt: 'text, letters, words, watermark, logo, signature, blurry, low quality, distorted',
+        width: 1024,
+        height: 1024,
+        model: 'runware:100@1', // Runware's default model
+        steps: 25,
+        CFGScale: 7.5,
+        outputType: 'URL',
+        outputFormat: 'PNG',
+        numberResults: 1,
       });
 
-      const imageData = response.data[0];
-      if (!imageData?.url) {
-        throw new Error('No image URL in response');
-      }
+      const imageUrl = images?.[0]?.imageURL || '';
 
       return {
-        imageUrl: imageData.url,
+        imageUrl,
         artStyle: selectedStyle,
         prompt: imagePrompt,
         generatedAt: new Date().toISOString(),
       };
     } catch (error) {
-      console.error('Visual composer error:', error);
+      console.error('Runware image generation failed:', error);
       
-      // Try with fallback model
-      return this.generateWithFallback(imagePrompt, selectedStyle);
-    }
-  }
-
-  /**
-   * Generate with fallback model
-   */
-  private async generateWithFallback(
-    prompt: string,
-    artStyle: ArtStyle
-  ): Promise<GeneratedVisual> {
-    try {
-      const response = await this.client.generateImage(prompt, {
-        model: OPENROUTER_CONFIG.fallbacks.visual,
-        size: VISUAL_COMPOSER_CONFIG.size,
-        n: 1,
-      });
-
-      const imageData = response.data[0];
-      if (!imageData?.url) {
-        throw new Error('No image URL in fallback response');
-      }
-
+      // Return empty URL - dashboard handles this gracefully with placeholder
       return {
-        imageUrl: imageData.url,
-        artStyle,
-        prompt,
-        generatedAt: new Date().toISOString(),
-      };
-    } catch (fallbackError) {
-      console.error('Fallback visual generation failed:', fallbackError);
-      
-      // Return null image - prompt will display without visual
-      return {
-        imageUrl: '', // Empty - dashboard should handle gracefully
-        artStyle,
-        prompt,
+        imageUrl: '',
+        artStyle: selectedStyle,
+        prompt: imagePrompt,
         generatedAt: new Date().toISOString(),
       };
     }
-  }
-
-  /**
-   * Generate multiple visuals in different styles
-   */
-  async generateVariations(
-    topic: string,
-    hook: string,
-    count: number = 3
-  ): Promise<GeneratedVisual[]> {
-    // Select random unique styles
-    const shuffled = [...ART_STYLES].sort(() => Math.random() - 0.5);
-    const selectedStyles = shuffled.slice(0, Math.min(count, ART_STYLES.length));
-
-    // Generate in parallel
-    const results = await Promise.allSettled(
-      selectedStyles.map(style => this.generate(topic, hook, style))
-    );
-
-    return results
-      .filter((r): r is PromiseFulfilledResult<GeneratedVisual> => r.status === 'fulfilled')
-      .map(r => r.value);
   }
 
   /**
@@ -205,6 +198,27 @@ export class VisualComposerAgent {
       style,
       description: VISUAL_COMPOSER_CONFIG.artStyles[style].description,
     }));
+  }
+
+  /**
+   * Disconnect from Runware (cleanup)
+   */
+  async disconnect(): Promise<void> {
+    // Wait for any pending initialization before disconnecting
+    if (this.initializationPromise) {
+      try {
+        await this.initializationPromise;
+      } catch {
+        // Ignore initialization errors during cleanup
+      }
+    }
+    
+    if (this.runware) {
+      await this.runware.disconnect();
+      this.runware = null;
+    }
+    
+    this.initializationPromise = null;
   }
 }
 
@@ -217,4 +231,3 @@ export function getVisualComposerAgent(): VisualComposerAgent {
   }
   return agentInstance;
 }
-

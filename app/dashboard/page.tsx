@@ -58,16 +58,6 @@ export default function Dashboard() {
   const [isLoadingPrompts, setIsLoadingPrompts] = useState(true);
   const [selectedPrompt, setSelectedPrompt] = useState<WritingPrompt | null>(null);
   const [generationJob, setGenerationJob] = useState<JobStatus | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  // Show loading while checking onboarding status
-  if (isChecking || !isOnboarded) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#FFFAF0]">
-        <div className="animate-pulse text-[#171717]/40">Loading...</div>
-      </div>
-    );
-  }
 
   // Fetch journal entries
   useEffect(() => {
@@ -164,33 +154,18 @@ export default function Dashboard() {
     setSelectedPrompt(null);
   }, []);
 
-  // Handle refresh prompts
-  const handleRefreshPrompts = useCallback(async () => {
-    if (isRefreshing) return;
-    
-    setIsRefreshing(true);
-    try {
-      const response = await fetch("/api/prompts/refresh", { method: "POST" });
-      if (response.ok) {
-        const data = await response.json();
-        setGenerationJob({
-          job: { id: data.jobId, status: 'processing' },
-          progress: { total: 9, completed: 0, stage: 'research' }
-        });
-        // Start polling for new prompts
-        setPrompts([]);
-        setIsLoadingPrompts(true);
-      }
-    } catch (error) {
-      console.error("Failed to refresh prompts:", error);
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [isRefreshing]);
-
   // Determine if we should show loading state for prompts
   const isGenerating = generationJob && generationJob.job.status === 'processing';
   const showPromptLoading = isLoadingPrompts || isGenerating;
+
+  // Show loading while checking onboarding status
+  if (isChecking || !isOnboarded) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#FFFAF0]">
+        <div className="animate-pulse text-[#171717]/40">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-[#FFFAF0]">
@@ -210,25 +185,6 @@ export default function Dashboard() {
               <h2 className="text-sm font-medium text-[#171717]/60 uppercase tracking-wide">
                 {isGenerating ? "Generating your prompts..." : "Today's prompts"}
               </h2>
-              {prompts.length > 0 && (
-                <button
-                  onClick={handleRefreshPrompts}
-                  disabled={isRefreshing}
-                  className="text-sm text-[#171717]/40 hover:text-[#171717] transition-colors disabled:opacity-50"
-                >
-                  {isRefreshing ? (
-                    <span className="flex items-center gap-1">
-                      <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                      Refreshing...
-                    </span>
-                  ) : (
-                    "Refresh"
-                  )}
-                </button>
-              )}
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
