@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Playfair } from "next/font/google";
+import { EB_Garamond } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 
-const playfair = Playfair({
-  variable: "--font-playfair",
+const ebGaramond = EB_Garamond({
+  variable: "--font-eb-garamond",
   subsets: ["latin"],
-  weight: ["400", "700"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -23,7 +23,7 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body
-          className={`${playfair.variable} antialiased`}
+          className={`${ebGaramond.variable} antialiased`}
         >
           {children}
         </body>

@@ -13,7 +13,7 @@ export default function OnboardingButton({
 }: OnboardingButtonProps) {
   return (
     <Link href={href}>
-      <button className="rounded-[20px] bg-[#FEBC2F] px-8 py-4 text-lg font-bold text-[#171717] transition-opacity hover:opacity-90 md:px-12 md:py-5 md:text-xl">
+      <button className="rounded-lg bg-[#FEBC2F] px-6 py-2 text-sm font-bold text-[#171717] transition-opacity hover:opacity-90 md:px-7 md:py-2.5 md:text-base" style={{ fontFamily: 'var(--font-eb-garamond), serif' }}>
         {children}
       </button>
     </Link>

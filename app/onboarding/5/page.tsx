@@ -1,127 +1,189 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
-import FadeInSection from "../../components/FadeInSection";
-import OnboardingButton from "../../components/OnboardingButton";
 
 const interests = [
-  { emoji: "📓", text: "Personal journaling" },
-  { emoji: "🧠", text: "Thoughts, ideas & reflections" },
-  { emoji: "🤍", text: "Mental health & emotions" },
-  { emoji: "⚛️", text: "Philosophy & deep thinking" },
-  { emoji: "🤖", text: "Technology & AI" },
-  { emoji: "💼", text: "Business, money & ambition" },
-  { emoji: "🎨", text: "Creativity & storytelling" },
-  { emoji: "📝", text: "Poetry" },
-  { emoji: "🎵", text: "Music, art & film" },
-  { emoji: "🌍", text: "Culture & society" },
-  { emoji: "🙏", text: "Faith & spirituality" },
-  { emoji: "❤️", text: "Relationships & love" },
-  { emoji: "✈️", text: "Travel & experiences" },
-  { emoji: "🤸", text: "Fitness & health" },
-  { emoji: "🌊", text: "Stream of consciousness / random thoughts" },
+  { id: "philosophy", label: "Philosophy" },
+  { id: "art-culture", label: "Art & culture" },
+  { id: "psychology", label: "Psychology" },
+  { id: "technology", label: "Technology" },
+  { id: "history", label: "History" },
+  { id: "fiction", label: "Fiction" },
+  { id: "personal-growth", label: "Personal growth" },
+  { id: "society-politics", label: "Society & politics" },
 ];
 
-export default function OnboardingPage5() {
-  const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+export default function OnboardingInterests() {
   const router = useRouter();
   const { user } = useUser();
+  const [selected, setSelected] = useState<string[]>([]);
+  const [showContent, setShowContent] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const toggleInterest = (interest: string) => {
-    setSelectedInterests((prev) =>
-      prev.includes(interest)
-        ? prev.filter((i) => i !== interest)
-        : [...prev, interest]
-    );
-  };
+  // Bold amber/ochre - creativity, warmth, energy (The Athletic inspired)
+  const bg = "#A85D00";
+  const textColor = "#FFF9F0";
+  const accentColor = "#FFD9A8";
+  const selectedBg = "#C47000";
+  const hoverBg = "#B86600";
+  const borderColor = "#D4914D";
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (selectedInterests.length === 0) return;
+  useEffect(() => {
+    const timer = setTimeout(() => setShowContent(true), 150);
+    return () => clearTimeout(timer);
+  }, []);
 
-    setIsSubmitting(true);
-    try {
-      const response = await fetch("/api/onboarding/preferences", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          clerkId: user?.id,
-          interests: selectedInterests,
-        }),
-      });
-
-      if (response.ok) {
-        router.push("/onboarding/6");
-      }
-    } catch (error) {
-      console.error("Error saving preferences:", error);
-    } finally {
-      setIsSubmitting(false);
+  const toggleInterest = (id: string) => {
+    if (selected.includes(id)) {
+      setSelected(selected.filter((s) => s !== id));
+    } else if (selected.length < 3) {
+      setSelected([...selected, id]);
     }
   };
 
+  const handleContinue = async () => {
+    if (selected.length === 0 || !user) return;
+
+    setIsSubmitting(true);
+    try {
+      await fetch("/api/onboarding/preferences", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clerkId: user.id,
+          interests: selected,
+        }),
+      });
+    } catch (error) {
+      console.error("Failed to save preference:", error);
+    }
+
+    router.push("/onboarding/6");
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#FFFAF0]">
-      <main className="flex min-h-screen w-full max-w-4xl flex-col items-center justify-center px-8 py-16 md:px-16">
-        <form onSubmit={handleSubmit} className="w-full space-y-8">
-          {/* Heading */}
-          <FadeInSection delay={400}>
-            <h1 className="text-center text-3xl font-bold text-[#171717] md:text-4xl lg:text-5xl">
-              What are your current interests?
-            </h1>
-          </FadeInSection>
+    <div
+      className="min-h-screen flex flex-col items-center justify-center px-8 relative overflow-hidden"
+      style={{
+        backgroundColor: bg,
+        fontFamily: "var(--font-eb-garamond), serif",
+      }}
+    >
+      {/* Subtle grain overlay */}
+      <div
+        className="absolute inset-0 opacity-[0.03] pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+        }}
+      />
 
-          {/* Subtitle */}
-          <FadeInSection delay={800}>
-            <p className="text-center text-lg italic text-[#171717] md:text-xl">
-              You don't have to know your 'thing' yet. Writing helps you find it.
-            </p>
-          </FadeInSection>
+      <div
+        className={`max-w-xl w-full transition-all duration-700 ease-out ${
+          showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+        }`}
+      >
+        {/* Question */}
+        <h1
+          className="text-3xl md:text-4xl lg:text-[2.75rem] font-normal leading-[1.2] tracking-[-0.02em] mb-5"
+          style={{ color: textColor }}
+        >
+          What do you enjoy thinking about?
+        </h1>
 
-          {/* Interests grid */}
-          <div className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-2">
-            {interests.map((interest, index) => (
-              <FadeInSection key={interest.text} delay={1200 + index * 100}>
-                <label
-                  className={`flex cursor-pointer items-center space-x-4 rounded-lg border-2 p-4 transition-all ${
-                    selectedInterests.includes(interest.text)
-                      ? "border-[#FEBC2F] bg-[#FEBC2F]/10"
-                      : "border-transparent bg-transparent hover:border-[#FEBC2F]/50"
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedInterests.includes(interest.text)}
-                    onChange={() => toggleInterest(interest.text)}
-                    className="hidden"
-                  />
-                  <span className="text-2xl">{interest.emoji}</span>
-                  <span className="text-lg text-[#171717] md:text-xl">
-                    {interest.text}
-                  </span>
-                </label>
-              </FadeInSection>
-            ))}
-          </div>
+        {/* Micro-copy */}
+        <p
+          className="text-lg md:text-xl mb-12 tracking-[-0.01em]"
+          style={{ color: accentColor, opacity: 0.9 }}
+        >
+          Select up to 3 topics.
+        </p>
 
-          {/* Next button */}
-          <FadeInSection delay={2700}>
-            <div className="mt-12 flex justify-center">
+        {/* Options - Grid layout */}
+        <div className="grid grid-cols-2 gap-3 mb-12">
+          {interests.map((interest, index) => {
+            const isSelected = selected.includes(interest.id);
+            const isDisabled = !isSelected && selected.length >= 3;
+
+            return (
               <button
-                type="submit"
-                disabled={selectedInterests.length === 0 || isSubmitting}
-                className="rounded-[20px] bg-[#FEBC2F] px-8 py-4 text-lg font-bold text-[#171717] transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed md:px-12 md:py-5 md:text-xl"
+                key={interest.id}
+                onClick={() => toggleInterest(interest.id)}
+                disabled={isDisabled}
+                className={`text-left px-5 py-4 rounded-xl transition-all duration-250 border-[1.5px] ${
+                  isDisabled ? "opacity-35 cursor-not-allowed" : ""
+                }`}
+                style={{
+                  backgroundColor: isSelected ? selectedBg : "transparent",
+                  borderColor: isSelected ? accentColor : borderColor,
+                  color: textColor,
+                  transitionDelay: `${index * 30}ms`,
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSelected && !isDisabled) {
+                    e.currentTarget.style.backgroundColor = hoverBg;
+                    e.currentTarget.style.borderColor = accentColor + "90";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected) {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                    e.currentTarget.style.borderColor = borderColor;
+                  }
+                }}
               >
-                {isSubmitting ? "Saving..." : "Next"}
+                <span className="text-base md:text-lg tracking-[-0.01em] flex items-center gap-2">
+                  {isSelected && (
+                    <span className="text-sm font-medium">✓</span>
+                  )}
+                  {interest.label}
+                </span>
               </button>
-            </div>
-          </FadeInSection>
-        </form>
-      </main>
+            );
+          })}
+        </div>
+
+        {/* CTA Button */}
+        <button
+          onClick={handleContinue}
+          disabled={selected.length === 0 || isSubmitting}
+          className={`group flex items-center gap-3 text-xl transition-all duration-300 ${
+            selected.length > 0 ? "hover:gap-5" : "opacity-35 cursor-not-allowed"
+          }`}
+          style={{ color: textColor }}
+        >
+          <span
+            className="relative pb-1"
+            style={{
+              borderBottom: `1.5px solid ${textColor}`,
+            }}
+          >
+            {isSubmitting ? "Saving..." : "Continue"}
+          </span>
+          <span
+            className="transition-transform duration-300 group-hover:translate-x-1 text-2xl"
+            style={{ fontWeight: 300 }}
+          >
+            →
+          </span>
+        </button>
+      </div>
+
+      {/* Progress indicator */}
+      <div className="absolute bottom-10 flex items-center gap-3">
+        {[0, 1, 2, 3, 4, 5].map((step) => (
+          <div
+            key={step}
+            className="transition-all duration-500 rounded-full"
+            style={{
+              width: step === 3 ? "28px" : "8px",
+              height: "8px",
+              backgroundColor: step === 3 ? textColor : `${textColor}30`,
+            }}
+          />
+        ))}
+      </div>
     </div>
   );
 }
-

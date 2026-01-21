@@ -48,9 +48,11 @@ model UserPreferences {
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   // Onboarding form data
-  writingReason String?  // Why do you want to write? (single select)
-  interests     String   // JSON array of selected interests (multi-select)
-  writingLevel  String?  // How would you describe your writing level? (single select)
+  writingIdentity  String?  // "Which feels closest right now?" (single select)
+  writingLevel     String?  // "How would you describe your writing today?" (single select)
+  writingFrequency String?  // "How often do you want to write?" (single select)
+  interests        String   // JSON array of selected interests (multi-select)
+  writingReason    String?  // "What do you hope writing will give you?" (single select)
   
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

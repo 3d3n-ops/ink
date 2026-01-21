@@ -17,7 +17,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { clerkId, writingReason, interests, writingLevel } = body;
+    const { 
+      clerkId, 
+      writingReason, 
+      interests, 
+      writingLevel,
+      writingIdentity,  // New: "Which feels closest right now?"
+      writingFrequency, // New: "How often do you want to write?"
+    } = body;
 
     // Verify the clerkId matches the authenticated user
     if (clerkId !== userId) {
@@ -64,6 +71,14 @@ export async function POST(request: NextRequest) {
       updates.push("writingLevel = ?");
       updateArgs.push(writingLevel);
     }
+    if (writingIdentity !== undefined) {
+      updates.push("writingIdentity = ?");
+      updateArgs.push(writingIdentity);
+    }
+    if (writingFrequency !== undefined) {
+      updates.push("writingFrequency = ?");
+      updateArgs.push(writingFrequency);
+    }
 
     const now = new Date().toISOString();
 
@@ -71,14 +86,16 @@ export async function POST(request: NextRequest) {
       // Create new preferences
       const prefId = generateId();
       await libsql.execute({
-        sql: `INSERT INTO UserPreferences (id, userId, writingReason, interests, writingLevel, createdAt, updatedAt) 
-              VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        sql: `INSERT INTO UserPreferences (id, userId, writingReason, interests, writingLevel, writingIdentity, writingFrequency, createdAt, updatedAt) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           prefId,
           userId_db,
           writingReason || null,
           interests ? JSON.stringify(interests) : JSON.stringify([]),
           writingLevel || null,
+          writingIdentity || null,
+          writingFrequency || null,
           now,
           now,
         ],
@@ -101,4 +118,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
