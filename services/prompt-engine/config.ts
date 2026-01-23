@@ -28,14 +28,14 @@ export const OPENROUTER_CONFIG = {
     // Gemini 3 Flash - Fast, cost-effective composition
     composer: process.env.OPENROUTER_COMPOSER_MODEL || 'google/gemini-3-flash-preview',
     
-    // FLUX 1.1 Pro - High-quality artistic image generation (legacy, now using Runware)
-    visual: process.env.OPENROUTER_VISUAL_MODEL || 'black-forest-labs/flux-1.1-pro',
+    // Gemini 2.5 Flash - Excellent image generation
+    visual: process.env.OPENROUTER_VISUAL_MODEL || 'google/gemini-2.5-flash-image',
   },
   
   // Fallback models if primary unavailable
   fallbacks: {
     composer: 'google/gemini-2.0-flash-001',
-    visual: 'black-forest-labs/flux-schnell',
+    visual: 'google/gemini-2.0-flash-preview-image-generation',
   },
   
   // Request configuration
@@ -86,39 +86,19 @@ export const VISUAL_COMPOSER_CONFIG = {
   // Image dimensions
   size: '1024x1024',
   
-  // Art styles with descriptions for FLUX
+  // Art styles - impressionist nature scenes
   artStyles: {
-    'minimalist-geometric': {
-      description: 'Clean lines, simple shapes, limited color palette, lots of negative space',
-      modifiers: 'minimalist, geometric, clean, modern, bauhaus inspired',
+    'watercolor': {
+      description: 'Soft, flowing watercolor painting with gentle washes and luminous transparency',
+      modifiers: 'watercolor painting, soft edges, wet-on-wet technique, luminous, transparent washes, delicate brushwork, impressionist style',
     },
-    'surrealist-dreamscape': {
-      description: 'Dream-like imagery, unexpected juxtapositions, melting forms',
-      modifiers: 'surrealist, dreamlike, dali inspired, ethereal, impossible geometry',
+    'oil-paint': {
+      description: 'Rich, textured oil painting with visible brushstrokes and deep colors',
+      modifiers: 'oil painting, impasto technique, visible brushstrokes, rich textures, monet inspired, impressionist, en plein air',
     },
-    'abstract-expressionism': {
-      description: 'Bold brushstrokes, emotional intensity, non-representational',
-      modifiers: 'abstract expressionist, bold strokes, raw emotion, kandinsky inspired',
-    },
-    'contemporary-digital': {
-      description: 'Modern digital art, gradients, glitch aesthetics, neon accents',
-      modifiers: 'digital art, contemporary, glitch, neon, cyberpunk influenced',
-    },
-    'watercolor-impressionism': {
-      description: 'Soft edges, flowing colors, light and atmosphere focused',
-      modifiers: 'watercolor, impressionist, soft, dreamy, monet inspired',
-    },
-    'bold-editorial': {
-      description: 'Magazine-style, high contrast, typography-friendly, graphic',
-      modifiers: 'editorial illustration, bold, graphic, high contrast, magazine style',
-    },
-    'neo-brutalism': {
-      description: 'Raw, unpolished, bold colors, chunky shapes, anti-minimalist',
-      modifiers: 'neo-brutalist, raw, bold colors, chunky, unconventional',
-    },
-    'ethereal-gradient': {
-      description: 'Soft gradients, celestial themes, peaceful, contemplative',
-      modifiers: 'gradient, ethereal, celestial, peaceful, aurora-like, flowing',
+    'acrylic': {
+      description: 'Vibrant acrylic painting with bold colors and expressive brushwork',
+      modifiers: 'acrylic painting, vibrant colors, expressive brushwork, modern impressionist, bold strokes, contemporary',
     },
   },
 } as const;

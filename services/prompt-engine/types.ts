@@ -51,14 +51,9 @@ export interface PromptContent {
 // ============================================================================
 
 export type ArtStyle =
-  | 'minimalist-geometric'
-  | 'surrealist-dreamscape'
-  | 'abstract-expressionism'
-  | 'contemporary-digital'
-  | 'watercolor-impressionism'
-  | 'bold-editorial'
-  | 'neo-brutalism'
-  | 'ethereal-gradient';
+  | 'watercolor'
+  | 'oil-paint'
+  | 'acrylic';
 
 export interface VisualPromptConfig {
   topic: string;

@@ -144,12 +144,102 @@ export default function EntryPage() {
 
                 {/* Content */}
                 <div 
-                  className="prose prose-lg max-w-none text-[#171717]"
+                  className="entry-content prose prose-lg max-w-none text-[#171717]"
                   dangerouslySetInnerHTML={{ __html: entry.content }}
-                  style={{
-                    lineHeight: 1.7,
-                  }}
                 />
+
+                {/* Styles matching the editor for consistent formatting */}
+                <style jsx global>{`
+                  .entry-content {
+                    line-height: 1.7;
+                  }
+                  .entry-content h1 {
+                    font-size: 2rem;
+                    font-weight: 700;
+                    margin-bottom: 1rem;
+                    line-height: 1.2;
+                  }
+                  .entry-content h2 {
+                    font-size: 1.5rem;
+                    font-weight: 700;
+                    margin-bottom: 0.75rem;
+                    line-height: 1.3;
+                  }
+                  .entry-content h3 {
+                    font-size: 1.25rem;
+                    font-weight: 600;
+                    margin-bottom: 0.5rem;
+                    line-height: 1.4;
+                  }
+                  .entry-content p {
+                    margin-bottom: 0.75rem;
+                    line-height: 1.7;
+                  }
+                  .entry-content ul,
+                  .entry-content ol {
+                    padding-left: 1.5rem;
+                    margin-bottom: 0.75rem;
+                  }
+                  .entry-content li {
+                    margin-bottom: 0.25rem;
+                  }
+                  .entry-content blockquote {
+                    border-left: 3px solid #FEBC2F;
+                    padding-left: 1rem;
+                    margin-left: 0;
+                    margin-bottom: 0.75rem;
+                    font-style: italic;
+                    color: #171717;
+                    opacity: 0.8;
+                  }
+                  .entry-content code {
+                    background: #171717;
+                    color: #FEBC2F;
+                    padding: 0.15rem 0.4rem;
+                    border-radius: 4px;
+                    font-family: ui-monospace, monospace;
+                    font-size: 0.9em;
+                  }
+                  .entry-content pre {
+                    background: #171717;
+                    color: #f8f8f2;
+                    padding: 1rem;
+                    border-radius: 8px;
+                    margin-bottom: 0.75rem;
+                    overflow-x: auto;
+                  }
+                  .entry-content pre code {
+                    background: none;
+                    color: inherit;
+                    padding: 0;
+                  }
+                  .entry-content mark {
+                    background: #FEBC2F;
+                    color: #171717;
+                    padding: 0.1rem 0.2rem;
+                    border-radius: 2px;
+                  }
+                  .entry-content hr {
+                    border: none;
+                    border-top: 2px solid #171717;
+                    opacity: 0.1;
+                    margin: 1.5rem 0;
+                  }
+                  .entry-content img {
+                    max-width: 100%;
+                    height: auto;
+                    border-radius: 8px;
+                    margin: 1rem 0;
+                  }
+                  .entry-content a {
+                    color: #FEBC2F;
+                    text-decoration: underline;
+                    cursor: pointer;
+                  }
+                  .entry-content a:hover {
+                    opacity: 0.8;
+                  }
+                `}</style>
               </>
             ) : null}
           </article>

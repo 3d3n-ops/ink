@@ -1,5 +1,5 @@
 "use client";
-
+/* home page of app */
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import Sidebar from "../components/Sidebar";
@@ -78,10 +78,10 @@ export default function Dashboard() {
     fetchEntries();
   }, []);
 
-  // Fetch writing prompts
+  // Fetch writing prompts (include both ready and used so they stay visible after clicking)
   const fetchPrompts = useCallback(async () => {
     try {
-      const response = await fetch("/api/prompts?status=ready&limit=3");
+      const response = await fetch("/api/prompts?status=ready,used&limit=3");
       if (response.ok) {
         const data = await response.json();
         setPrompts(data.prompts || []);
@@ -107,8 +107,8 @@ export default function Dashboard() {
 
     async function checkJobStatus() {
       try {
-        // Try to get prompts first
-        const promptsResponse = await fetch("/api/prompts?status=ready&limit=3");
+        // Try to get prompts first (include both ready and used)
+        const promptsResponse = await fetch("/api/prompts?status=ready,used&limit=3");
         if (promptsResponse.ok) {
           const data = await promptsResponse.json();
           if (data.prompts && data.prompts.length > 0) {
@@ -146,8 +146,8 @@ export default function Dashboard() {
   // Handle slideshow completion
   const handleSlideshowComplete = useCallback(() => {
     setSelectedPrompt(null);
-    fetchPrompts(); // Refresh prompts after using one
-  }, [fetchPrompts]);
+    // Don't refresh prompts - keep them visible on screen even after being clicked
+  }, []);
 
   // Handle slideshow cancel
   const handleSlideshowCancel = useCallback(() => {

@@ -1,53 +1,47 @@
 /**
  * Visual Composer Agent
- * Uses Runware AI to generate abstract, artistic images
- * that complement the writing prompts.
+ * Uses OpenRouter with Gemini 2.5 Flash to generate realistic impressionist-style art
+ * of nature scenes using watercolor, oil paint, and acrylic styles.
  */
 
-import { Runware } from '@runware/sdk-js';
-import { VISUAL_COMPOSER_CONFIG } from '../config';
+import { OPENROUTER_CONFIG, VISUAL_COMPOSER_CONFIG } from '../config';
 import type { ArtStyle, GeneratedVisual, VisualPromptConfig } from '../types';
 
-// All available art styles
+// Available art styles - impressionist nature scenes
 const ART_STYLES: ArtStyle[] = [
-  'minimalist-geometric',
-  'surrealist-dreamscape',
-  'abstract-expressionism',
-  'contemporary-digital',
-  'watercolor-impressionism',
-  'bold-editorial',
-  'neo-brutalism',
-  'ethereal-gradient',
+  'watercolor',
+  'oil-paint',
+  'acrylic',
 ];
 
-// Topic to mood/atmosphere mapping
-const TOPIC_MOODS: Record<string, string[]> = {
-  'technology': ['futuristic', 'cold blue', 'digital', 'circuit-like', 'neon'],
-  'philosophy': ['contemplative', 'deep', 'infinite', 'cosmic', 'thoughtful'],
-  'emotions': ['warm', 'turbulent', 'flowing', 'raw', 'visceral'],
-  'society': ['interconnected', 'urban', 'dynamic', 'complex', 'textured'],
-  'creativity': ['vibrant', 'explosive', 'colorful', 'dynamic', 'playful'],
-  'spirituality': ['ethereal', 'luminous', 'peaceful', 'transcendent', 'golden'],
-  'relationships': ['intimate', 'warm', 'intertwined', 'delicate', 'tender'],
-  'business': ['structured', 'ambitious', 'bold', 'ascending', 'powerful'],
-  'health': ['organic', 'vital', 'balanced', 'flowing', 'energetic'],
-  'culture': ['rich', 'layered', 'diverse', 'textured', 'vibrant'],
-  'default': ['abstract', 'thought-provoking', 'evocative', 'layered', 'intriguing'],
-};
+// Nature scenes to randomly select from
+const NATURE_SCENES = [
+  'misty morning forest with sunlight filtering through trees',
+  'serene lake at sunset with mountains in the distance',
+  'wildflower meadow with rolling hills',
+  'ocean waves crashing on rocky coastline',
+  'autumn leaves falling in a peaceful woodland',
+  'snow-covered mountain peaks at dawn',
+  'tranquil stream flowing through a mossy glen',
+  'golden wheat field under stormy skies',
+  'cherry blossoms along a quiet pathway',
+  'lavender fields stretching to the horizon',
+  'tropical waterfall hidden in lush jungle',
+  'starry night sky over a calm lake',
+  'morning mist rising over a river valley',
+  'sunflowers dancing in summer breeze',
+  'coastal cliffs with crashing surf below',
+  'bamboo forest with dappled light',
+  'desert landscape at golden hour',
+  'rainforest canopy with rays of light',
+];
 
 /**
- * Get mood keywords for a topic
+ * Select a random nature scene
  */
-function getMoodForTopic(topic: string): string[] {
-  const topicLower = topic.toLowerCase();
-  
-  for (const [key, moods] of Object.entries(TOPIC_MOODS)) {
-    if (topicLower.includes(key)) {
-      return moods;
-    }
-  }
-  
-  return TOPIC_MOODS.default;
+function selectRandomNatureScene(): string {
+  const index = Math.floor(Math.random() * NATURE_SCENES.length);
+  return NATURE_SCENES[index];
 }
 
 /**
@@ -60,116 +54,220 @@ function selectRandomArtStyle(): ArtStyle {
 
 /**
  * Build the image generation prompt
- * Uses both topic and context (hook/summary) to create more relevant visuals
+ * Creates realistic impressionist nature scenes
  */
 function buildImagePrompt(config: VisualPromptConfig): string {
   const styleConfig = VISUAL_COMPOSER_CONFIG.artStyles[config.artStyle];
-  const moods = getMoodForTopic(config.topic);
-  const selectedMoods = moods.slice(0, 3).join(', ');
+  const natureScene = selectRandomNatureScene();
   
-  // Extract key themes from context if provided (limit to first 100 chars for prompt efficiency)
-  const contextHint = config.context 
-    ? `. Inspired by: ${config.context.substring(0, 100)}` 
-    : '';
-  
-  // Create an abstract prompt that captures the essence without being too literal
-  const prompt = `Abstract artistic interpretation of the concept: "${config.topic}"${contextHint}. Style: ${styleConfig.description}. Mood: ${selectedMoods}. Artistic modifiers: ${styleConfig.modifiers}. Create an ABSTRACT representation, not literal imagery. Focus on evoking emotion and thought. High quality, professional artistic composition. Suitable as a header image for an intellectual essay. No text, no letters, no words in the image. Clean composition with visual interest.`;
+  // Realistic impressionist nature art prompt
+  const prompt = `Generate an image: A realistic impressionist ${config.artStyle} painting of ${natureScene}. ${styleConfig.description}. Style: ${styleConfig.modifiers}. Detailed, realistic nature scene with impressionist brushwork. Vibrant colors, natural lighting, beautiful composition. Museum quality fine art painting. Masterpiece. No text, no letters, no words, no watermarks.`;
 
   return prompt;
 }
 
 /**
- * Visual Composer Agent - generates abstract images for prompts using Runware AI
+ * Visual Composer Agent - generates images using OpenRouter with Gemini 2.5 Flash
  */
 export class VisualComposerAgent {
-  private runware: InstanceType<typeof Runware> | null = null;
-  private initializationPromise: Promise<InstanceType<typeof Runware>> | null = null;
+  private apiKey: string;
+  private baseUrl: string;
 
-  /**
-   * Initialize Runware client with proper synchronization
-   * Uses a promise-based lock to prevent race conditions when multiple
-   * parallel pipelines call generate() simultaneously
-   */
-  private async getClient(): Promise<InstanceType<typeof Runware>> {
-    // If already initialized, return immediately
-    if (this.runware) {
-      return this.runware;
-    }
-
-    // If initialization is in progress, wait for it
-    if (this.initializationPromise) {
-      return this.initializationPromise;
-    }
-
-    // Start initialization and store the promise so concurrent calls can wait on it
-    this.initializationPromise = this.initializeClient();
-    
-    try {
-      this.runware = await this.initializationPromise;
-      return this.runware;
-    } catch (error) {
-      // Reset on failure so future calls can retry
-      this.initializationPromise = null;
-      throw error;
-    }
-  }
-
-  /**
-   * Internal initialization logic - only called once
-   */
-  private async initializeClient(): Promise<InstanceType<typeof Runware>> {
-    const apiKey = process.env.RUNWARE_API_KEY;
+  constructor() {
+    const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
-      throw new Error('RUNWARE_API_KEY environment variable is required');
+      throw new Error('OPENROUTER_API_KEY environment variable is required');
     }
-
-    const client = new Runware({ apiKey });
-    await client.ensureConnection();
-    return client;
+    this.apiKey = apiKey;
+    this.baseUrl = OPENROUTER_CONFIG.baseUrl;
   }
 
   /**
-   * Generate an abstract visual for a writing prompt using Runware AI
+   * Get headers for OpenRouter requests
+   */
+  private getHeaders(): Record<string, string> {
+    const referer = process.env.NODE_ENV === 'production'
+      ? 'https://try-ink.app'
+      : 'http://localhost:3000';
+    
+    return {
+      'Authorization': `Bearer ${this.apiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': referer,
+      'X-Title': 'Ink - Writing App',
+    };
+  }
+
+  /**
+   * Generate an image using Gemini 2.5 Flash via OpenRouter
+   * Includes retry logic for transient failures
+   */
+  private async generateWithGemini(prompt: string, retries: number = 2): Promise<string> {
+    const model = OPENROUTER_CONFIG.models.visual;
+    
+    const request = {
+      model,
+      messages: [
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      max_tokens: 4096,
+    };
+
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const response = await fetch(`${this.baseUrl}/chat/completions`, {
+          method: 'POST',
+          headers: this.getHeaders(),
+          body: JSON.stringify(request),
+          signal: AbortSignal.timeout(120000), // 2 minute timeout for image generation
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          
+          // Don't retry on client errors (4xx) except 429 (rate limit)
+          if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+            throw new Error(`OpenRouter/Gemini image error ${response.status}: ${errorText}`);
+          }
+          
+          // Retry on server errors (5xx) and rate limits (429)
+          if (attempt < retries) {
+            const delay = OPENROUTER_CONFIG.requests.retryDelayMs * Math.pow(2, attempt);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
+          }
+          
+          throw new Error(`OpenRouter/Gemini image error ${response.status}: ${errorText}`);
+        }
+
+        const data = await response.json();
+        
+        const message = data.choices?.[0]?.message;
+        
+        if (!message) {
+          throw new Error('No message in Gemini response');
+        }
+        
+        // Gemini returns images in the 'images' field
+        if (message.images && Array.isArray(message.images) && message.images.length > 0) {
+          const image = message.images[0];
+          
+          // Check for image_url.url (Gemini format)
+          if (image.image_url?.url) {
+            return image.image_url.url;
+          }
+          
+          // Check for direct URL property
+          if (image.url) {
+            return image.url;
+          }
+          
+          // Check for base64 data
+          if (image.b64_json) {
+            const mimeType = image.mime_type || 'image/png';
+            return `data:${mimeType};base64,${image.b64_json}`;
+          }
+          
+          // Check if image is a string URL
+          if (typeof image === 'string') {
+            return image;
+          }
+        }
+        
+        // Check for multimodal content array (Gemini's native format via OpenRouter)
+        if (message.content && Array.isArray(message.content)) {
+          for (const part of message.content) {
+            // Check for image_url type with URL
+            if (part.type === 'image_url' && part.image_url?.url) {
+              return part.image_url.url;
+            }
+            // Check for inline_data with base64
+            if (part.type === 'image' && part.image_url?.url) {
+              return part.image_url.url;
+            }
+            // Check for base64 inline data (Gemini format)
+            if (part.inline_data?.mime_type?.startsWith('image/')) {
+              return `data:${part.inline_data.mime_type};base64,${part.inline_data.data}`;
+            }
+            // Check for text content that might contain a URL
+            if (part.type === 'text' && part.text) {
+              const urlMatch = part.text.match(/https?:\/\/[^\s"'<>]+\.(png|jpg|jpeg|gif|webp)/i);
+              if (urlMatch) {
+                return urlMatch[0];
+              }
+            }
+          }
+        }
+        
+        // Check if content is a string
+        const content = typeof message.content === 'string' ? message.content : null;
+        
+        if (content) {
+          // Try to extract URL from content if it's text with a URL
+          const urlMatch = content.match(/https?:\/\/[^\s"'<>]+\.(png|jpg|jpeg|gif|webp)/i);
+          if (urlMatch) {
+            return urlMatch[0];
+          }
+
+          // If the content itself is base64 encoded image data
+          if (content.includes('base64,')) {
+            return content;
+          }
+        }
+
+        throw new Error('No image found in Gemini response. Available fields: ' + Object.keys(message).join(', '));
+      } catch (error) {
+        // If this is the last attempt, throw the error
+        if (attempt === retries) {
+          throw error;
+        }
+        
+        // Retry on network errors or timeouts
+        if (error instanceof Error && (
+          error.message.includes('timeout') ||
+          error.message.includes('network') ||
+          error.message.includes('fetch')
+        )) {
+          const delay = OPENROUTER_CONFIG.requests.retryDelayMs * Math.pow(2, attempt);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+        
+        // Don't retry on other errors
+        throw error;
+      }
+    }
+    
+    throw new Error('Failed to generate image after retries');
+  }
+
+  /**
+   * Generate a realistic impressionist nature scene
    * 
-   * @param topic - The main topic/interest (e.g., "Artificial Intelligence")
-   * @param context - Optional context like research summary or hook to influence the visual
+   * @param _topic - Unused (kept for API compatibility)
+   * @param _context - Unused (kept for API compatibility)
    * @param artStyle - Optional specific art style, or random if not specified
    */
   async generate(
-    topic: string,
-    context?: string,
+    _topic?: string,
+    _context?: string,
     artStyle?: ArtStyle
   ): Promise<GeneratedVisual> {
     // Select art style (random if not specified)
     const selectedStyle = artStyle || selectRandomArtStyle();
     
     const config: VisualPromptConfig = {
-      topic,
-      context,
+      topic: 'nature', // Fixed topic for impressionist nature scenes
       artStyle: selectedStyle,
-      mood: getMoodForTopic(topic).join(', '),
     };
 
     const imagePrompt = buildImagePrompt(config);
 
     try {
-      const runware = await this.getClient();
-      
-      // Generate image using Runware AI
-      const images = await runware.imageInference({
-        positivePrompt: imagePrompt,
-        negativePrompt: 'text, letters, words, watermark, logo, signature, blurry, low quality, distorted',
-        width: 1024,
-        height: 1024,
-        model: 'runware:100@1', // Runware's default model
-        steps: 25,
-        CFGScale: 7.5,
-        outputType: 'URL',
-        outputFormat: 'PNG',
-        numberResults: 1,
-      });
-
-      const imageUrl = images?.[0]?.imageURL || '';
+      const imageUrl = await this.generateWithGemini(imagePrompt);
 
       return {
         imageUrl,
@@ -178,7 +276,7 @@ export class VisualComposerAgent {
         generatedAt: new Date().toISOString(),
       };
     } catch (error) {
-      console.error('Runware image generation failed:', error);
+      console.error('Gemini image generation failed:', error);
       
       // Return empty URL - dashboard handles this gracefully with placeholder
       return {
@@ -201,24 +299,10 @@ export class VisualComposerAgent {
   }
 
   /**
-   * Disconnect from Runware (cleanup)
+   * Disconnect - no-op for OpenRouter (no persistent connection)
    */
   async disconnect(): Promise<void> {
-    // Wait for any pending initialization before disconnecting
-    if (this.initializationPromise) {
-      try {
-        await this.initializationPromise;
-      } catch {
-        // Ignore initialization errors during cleanup
-      }
-    }
-    
-    if (this.runware) {
-      await this.runware.disconnect();
-      this.runware = null;
-    }
-    
-    this.initializationPromise = null;
+    // No-op - OpenRouter uses HTTP, no persistent connection to close
   }
 }
 

@@ -6,7 +6,7 @@ import { randomBytes } from "crypto";
 
 // Helper to generate CUID-like ID
 function generateId(): string {
-  return randomBytes(16).toString("hex");
+  return randomBytes(16).toString('hex');
 }
 
 // POST - Create a new journal entry

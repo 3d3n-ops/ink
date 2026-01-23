@@ -11,4 +11,3 @@ export const libsql = globalForLibsql.libsql ?? createClient({
 });
 
 if (process.env.NODE_ENV !== "production") globalForLibsql.libsql = libsql;
-

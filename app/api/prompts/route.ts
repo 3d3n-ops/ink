@@ -29,13 +29,20 @@ export async function GET(request: NextRequest) {
 
     // Parse query params
     const searchParams = request.nextUrl.searchParams;
-    const status = searchParams.get("status") || "ready";
+    const statusParam = searchParams.get("status");
     const limit = parseInt(searchParams.get("limit") || "10", 10);
     const offset = parseInt(searchParams.get("offset") || "0", 10);
 
+    // Parse status - supports comma-separated values like "ready,used"
+    let status: "ready" | "used" | "dismissed" | ("ready" | "used" | "dismissed")[] | undefined;
+    if (statusParam) {
+      const statuses = statusParam.split(",").map(s => s.trim()) as ("ready" | "used" | "dismissed")[];
+      status = statuses.length === 1 ? statuses[0] : statuses;
+    }
+
     // Get prompts
     const prompts = await repository.getWritingPromptsForUser(userId, {
-      status: status as "ready" | "used" | "dismissed",
+      status,
       limit,
       offset,
     });

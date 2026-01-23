@@ -42,4 +42,6 @@ bun run dev
 DATABASE_URL=
 CLERK_SECRET_KEY=
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+OPENROUTER_API_KEY=          # Required for AI prompt generation and image generation
+PERPLEXITY_API_KEY=          # Required for research agent
 ```
