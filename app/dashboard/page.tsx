@@ -84,10 +84,21 @@ export default function Dashboard() {
       const response = await fetch("/api/prompts?status=ready,used&limit=3");
       if (response.ok) {
         const data = await response.json();
-        setPrompts(data.prompts || []);
+        if (data.prompts && Array.isArray(data.prompts)) {
+          // Validate that prompts have required fields
+          const validPrompts = data.prompts.filter((p: WritingPrompt) => 
+            p && p.id && p.hook && p.interest !== undefined
+          );
+          setPrompts(validPrompts);
+        } else {
+          setPrompts([]);
+        }
+      } else {
+        setPrompts([]);
       }
     } catch (error) {
       console.error("Failed to fetch prompts:", error);
+      setPrompts([]);
     } finally {
       setIsLoadingPrompts(false);
     }
@@ -111,12 +122,15 @@ export default function Dashboard() {
         const promptsResponse = await fetch("/api/prompts?status=ready,used&limit=3");
         if (promptsResponse.ok) {
           const data = await promptsResponse.json();
-          if (data.prompts && data.prompts.length > 0) {
+          console.log("Polling - Prompts API response:", data);
+          if (data.prompts && Array.isArray(data.prompts) && data.prompts.length > 0) {
             setPrompts(data.prompts);
             setGenerationJob(null);
             clearInterval(pollInterval);
             return;
           }
+        } else {
+          console.error("Polling - Failed to fetch prompts:", promptsResponse.status);
         }
 
         pollCount++;

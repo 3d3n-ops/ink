@@ -23,35 +23,14 @@ export default function OnboardingPaywall() {
     return () => clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    // Trigger prompt generation in the background
-    async function triggerPromptGeneration() {
-      if (hasTriggeredGeneration.current) return;
-      hasTriggeredGeneration.current = true;
-
-      try {
-        const response = await fetch("/api/prompts", {
-          method: "POST",
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          console.log("Prompt generation started:", data.jobId);
-        }
-      } catch (error) {
-        console.error("Failed to trigger prompt generation:", error);
-      }
-    }
-
-    triggerPromptGeneration();
-  }, []);
+  // Note: Prompt generation will be triggered on the loading screen
+  // This ensures we show a proper loading state while generation happens
 
   const handleStartTrial = async () => {
     setIsLoading(true);
     // In a real app, this would initiate the payment/subscription flow
-    setTimeout(() => {
-      router.push("/dashboard");
-    }, 500);
+    // Redirect to loading screen where prompts will be generated
+    router.push("/loading-prompts");
   };
 
   return (
@@ -229,7 +208,7 @@ export default function OnboardingPaywall() {
 
         {/* Skip link */}
         <button
-          onClick={() => router.push("/dashboard")}
+          onClick={() => router.push("/loading-prompts")}
           className="w-full mt-5 py-3 text-base hover:opacity-70 transition-opacity tracking-[-0.01em]"
           style={{ color: accentColor, opacity: 0.5 }}
         >

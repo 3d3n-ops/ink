@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { getPromptOrchestrator } from "@/services/prompt-engine/orchestrator";
 import * as repository from "@/services/prompt-engine/repository";
+import { libsql } from "@/lib/prisma";
 
 /**
  * GET /api/prompts

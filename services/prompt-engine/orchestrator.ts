@@ -48,33 +48,24 @@ async function runInterestPipeline(
 
   try {
     // Step 1: Research (must complete first)
-    console.log(`[${jobId}] 📚 Researching: ${interest}`);
     const research: ResearchReport = await researchAgent.research(interest);
 
     // Step 2: Run Composition and Visual generation IN PARALLEL
     // Visual only needs the topic, not the composed content
-    console.log(`[${jobId}] ⚡ Running composition + visual in parallel for: ${interest}`);
-    
     const [content, visual] = await Promise.all([
       // Composition task
-      (async (): Promise<PromptContent> => {
-        console.log(`[${jobId}] ✍️  Composing prompt for: ${interest}`);
-        return composerAgent.compose(research);
-      })(),
+      composerAgent.compose(research),
       
-      // Visual generation task (runs in parallel)
+      // Visual generation task (runs in parallel, fails gracefully)
       (async (): Promise<GeneratedVisual | null> => {
-        console.log(`[${jobId}] 🎨 Generating visual for: ${interest}`);
         try {
           return await visualAgent.generate(interest, research.summary);
         } catch (visualError) {
-          console.warn(`[${jobId}] Visual generation failed, continuing without image:`, visualError);
+          // Visual generation is optional, continue without image
           return null;
         }
       })(),
     ]);
-
-    console.log(`[${jobId}] ✅ Pipeline complete for: ${interest}`);
 
     return {
       interest,
@@ -84,7 +75,7 @@ async function runInterestPipeline(
       success: true,
     };
   } catch (error) {
-    console.error(`[${jobId}] Pipeline failed for ${interest}:`, error);
+    console.error(`[Job ${jobId}] Pipeline failed for ${interest}:`, error);
     return {
       interest,
       research: createEmptyResearch(interest),
@@ -145,7 +136,6 @@ export class PromptOrchestrator {
     // Check for existing active job
     const existingJob = await repository.getActiveJobForUser(userId);
     if (existingJob) {
-      console.log(`Active job exists for user ${userId}: ${existingJob.id}`);
       return existingJob;
     }
 
@@ -168,8 +158,26 @@ export class PromptOrchestrator {
     });
 
     // Start background processing (don't await - fire and forget)
-    this.processJob(job.id, userId, selectedInterests).catch(error => {
-      console.error(`Job ${job.id} failed:`, error);
+    // Add timeout to prevent jobs from hanging forever (10 minutes max)
+    const timeoutPromise = new Promise<void>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('Job timeout after 10 minutes'));
+      }, 10 * 60 * 1000); // 10 minutes
+    });
+
+    Promise.race([
+      this.processJob(job.id, userId, selectedInterests),
+      timeoutPromise
+    ]).catch(error => {
+      console.error(`Job ${job.id} failed or timed out:`, error);
+      // Try to mark job as failed if it times out
+      repository.updateJobStatus(
+        job.id,
+        'failed',
+        error instanceof Error ? error.message : 'Job timeout'
+      ).catch(updateError => {
+        console.error(`Failed to update job ${job.id} status after timeout:`, updateError);
+      });
     });
 
     return job;
@@ -183,8 +191,6 @@ export class PromptOrchestrator {
     userId: string,
     interests: string[]
   ): Promise<void> {
-    console.log(`[${jobId}] Starting prompt generation for ${interests.length} interests`);
-
     try {
       // Update job status to processing
       await repository.updateJobStatus(jobId, 'processing');
@@ -196,22 +202,32 @@ export class PromptOrchestrator {
 
       // Count successes
       const successfulResults = results.filter(r => r.success);
-      console.log(`[${jobId}] Completed: ${successfulResults.length}/${results.length} successful`);
+      const failedResults = results.filter(r => !r.success);
+      
+      if (failedResults.length > 0) {
+        console.error(`[Job ${jobId}] ${failedResults.length} pipeline(s) failed:`, 
+          failedResults.map(r => ({ interest: r.interest, error: r.error }))
+        );
+      }
 
       // Save successful prompts to database
       for (const result of successfulResults) {
-        await repository.createWritingPrompt({
-          userId,
-          interest: result.interest,
-          hook: result.content.hook,
-          blurb: result.content.blurb,
-          imageUrl: result.visual?.imageUrl || null,
-          tags: result.content.tags,
-          suggestedAngles: result.content.suggestedAngles,
-          sources: result.research.sources,
-          artStyle: result.visual?.artStyle || null,
-          status: 'ready',
-        });
+        try {
+          await repository.createWritingPrompt({
+            userId,
+            interest: result.interest,
+            hook: result.content.hook,
+            blurb: result.content.blurb,
+            imageUrl: result.visual?.imageUrl || null,
+            tags: result.content.tags,
+            suggestedAngles: result.content.suggestedAngles,
+            sources: result.research.sources,
+            artStyle: result.visual?.artStyle || null,
+            status: 'ready',
+          });
+        } catch (saveError) {
+          console.error(`[Job ${jobId}] Failed to save prompt for ${result.interest}:`, saveError);
+        }
       }
 
       // Update job progress - only count successful results
@@ -224,18 +240,21 @@ export class PromptOrchestrator {
       // Mark job as completed
       if (successfulResults.length > 0) {
         await repository.updateJobStatus(jobId, 'completed');
-        console.log(`[${jobId}] Job completed successfully`);
       } else {
         await repository.updateJobStatus(jobId, 'failed', 'All pipelines failed');
-        console.log(`[${jobId}] Job failed - no successful pipelines`);
+        console.error(`[Job ${jobId}] All pipelines failed`);
       }
     } catch (error) {
-      console.error(`[${jobId}] Job processing error:`, error);
-      await repository.updateJobStatus(
-        jobId,
-        'failed',
-        error instanceof Error ? error.message : 'Unknown error'
-      );
+      console.error(`[Job ${jobId}] Processing error:`, error);
+      try {
+        await repository.updateJobStatus(
+          jobId,
+          'failed',
+          error instanceof Error ? error.message : 'Unknown error'
+        );
+      } catch (updateError) {
+        console.error(`[Job ${jobId}] Failed to update job status:`, updateError);
+      }
     }
   }
 
@@ -337,10 +356,7 @@ export class PromptOrchestrator {
     succeeded: number;
     failed: number;
   }> {
-    console.log('[Daily Cron] Starting daily prompt generation for all users');
-
     const clerkUserIds = await repository.getUsersNeedingDailyPrompts();
-    console.log(`[Daily Cron] Found ${clerkUserIds.length} users needing prompts`);
 
     let succeeded = 0;
     let failed = 0;
@@ -368,8 +384,6 @@ export class PromptOrchestrator {
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
-
-    console.log(`[Daily Cron] Completed: ${succeeded} succeeded, ${failed} failed`);
 
     return {
       processed: clerkUserIds.length,
