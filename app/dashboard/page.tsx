@@ -5,7 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 import Sidebar from "../components/Sidebar";
 import WritingEntry from "../components/WritingEntry";
 import PromptCard from "../components/PromptCard";
-import PromptSlideshow from "../components/PromptSlideshow";
+import PromptViewer from "../components/PromptViewer";
 import { useOnboardingCheck } from "../hooks/useOnboardingCheck";
 
 interface JournalEntry {
@@ -56,7 +56,7 @@ export default function Dashboard() {
   const [prompts, setPrompts] = useState<WritingPrompt[]>([]);
   const [isLoadingEntries, setIsLoadingEntries] = useState(true);
   const [isLoadingPrompts, setIsLoadingPrompts] = useState(true);
-  const [selectedPrompt, setSelectedPrompt] = useState<WritingPrompt | null>(null);
+  const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null);
   const [generationJob, setGenerationJob] = useState<JobStatus | null>(null);
 
   // Fetch journal entries
@@ -150,22 +150,13 @@ export default function Dashboard() {
   }, [prompts.length, isLoadingPrompts]);
 
   // Handle prompt selection
-  const handlePromptSelect = useCallback(async (promptId: string) => {
-    const prompt = prompts.find(p => p.id === promptId);
-    if (prompt) {
-      setSelectedPrompt(prompt);
-    }
-  }, [prompts]);
-
-  // Handle slideshow completion
-  const handleSlideshowComplete = useCallback(() => {
-    setSelectedPrompt(null);
-    // Don't refresh prompts - keep them visible on screen even after being clicked
+  const handlePromptSelect = useCallback((promptId: string) => {
+    setSelectedPromptId(promptId);
   }, []);
 
-  // Handle slideshow cancel
-  const handleSlideshowCancel = useCallback(() => {
-    setSelectedPrompt(null);
+  // Handle prompt viewer close
+  const handlePromptViewerClose = useCallback(() => {
+    setSelectedPromptId(null);
   }, []);
 
   // Determine if we should show loading state for prompts
@@ -305,16 +296,11 @@ export default function Dashboard() {
         </div>
       </main>
 
-      {/* Slideshow overlay */}
-      {selectedPrompt && (
-        <PromptSlideshow
-          promptId={selectedPrompt.id}
-          hook={selectedPrompt.hook}
-          blurb={selectedPrompt.blurb}
-          imageUrl={selectedPrompt.imageUrl}
-          interest={selectedPrompt.interest}
-          onComplete={handleSlideshowComplete}
-          onCancel={handleSlideshowCancel}
+      {/* Prompt Viewer overlay */}
+      {selectedPromptId && (
+        <PromptViewer
+          promptId={selectedPromptId}
+          onClose={handlePromptViewerClose}
         />
       )}
     </div>

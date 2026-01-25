@@ -62,8 +62,8 @@ export const PROMPT_COMPOSER_CONFIG = {
   
   // Hook requirements
   hook: {
-    minWords: 8,
-    maxWords: 18,
+    minWords: 6,
+    maxWords: 12,
     styles: [
       'provocative-question',
       'bold-statement',
@@ -75,8 +75,8 @@ export const PROMPT_COMPOSER_CONFIG = {
   
   // Blurb requirements
   blurb: {
-    minParagraphs: 2,
-    maxParagraphs: 3,
+    minParagraphs: 1,
+    maxParagraphs: 2,
     includeLinks: true,
     toneOptions: ['thoughtful', 'urgent', 'exploratory', 'skeptical', 'hopeful'],
   },

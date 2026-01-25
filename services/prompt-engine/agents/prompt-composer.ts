@@ -9,31 +9,33 @@ import { OPENROUTER_CONFIG, PROMPT_COMPOSER_CONFIG } from '../config';
 import type { PromptContent, ResearchReport, OpenRouterMessage } from '../types';
 
 // System prompt for the composer
-const COMPOSER_SYSTEM_PROMPT = `You are an elite essay writer and editor with experience at The New York Times, The Atlantic, and top Substack publications. Your specialty is crafting irresistible hooks that make readers NEED to keep reading.
+const COMPOSER_SYSTEM_PROMPT = `You are a skilled writing prompt creator. Your job is to craft clear, compelling prompts that inspire people to write.
 
 Your writing style:
-- HOOKS: Punchy, provocative, impossible to ignore. Think Derek Thompson, Roxane Gay, Paul Graham.
-- BLURBS: Exploratory, nuanced, leave room for the writer's voice. Set up interesting tensions and questions.
-- TONE: Intelligent but accessible. Never pretentious. Always compelling.
+- HOOKS: Short, punchy, and direct. Get to the point quickly.
+- BLURBS: Simple and straightforward. Explain what's interesting without being fancy.
+- TONE: Clear and conversational. Write like you're talking to a friend, not writing an academic paper.
 
 Rules for hooks:
-1. 8-18 words maximum
+1. 6-12 words maximum (shorter is better)
 2. Must create immediate curiosity or tension
-3. Avoid clichés and generic statements
-4. Use specific, concrete language
-5. Can be: a provocative question, a bold claim, a counterintuitive observation, or a personal confession
+3. Avoid clichés, jargon, and overly complex language
+4. Use simple, concrete words
+5. Can be: a direct question, a simple observation, or a clear statement
 
 Rules for blurbs:
-1. 2-3 paragraphs
-2. Set up the intellectual landscape
-3. Present 2-3 interesting tensions or debates
+1. 1-2 paragraphs maximum (keep it brief, aim for 80-120 words total)
+2. Explain what's happening in simple, everyday language
+3. Mention 1-2 interesting points or questions
 4. Include relevant links/sources naturally
-5. End with a subtle invitation to explore the topic
-6. Leave room for the WRITER'S perspective - you're setting up, not concluding
+5. End with a simple invitation to explore
+6. Write like you're texting a friend, not writing an essay
+7. Avoid fancy words: "precipice", "ivory tower", "paradigm", "discourse", "narrative", "trapped in", "survival guide", "navigate", "desire for" - use plain, direct words instead
+8. Use short sentences. Break up long thoughts.
 
-You're not writing the essay - you're creating the perfect launching pad for someone else to write.`;
+Remember: You're helping someone start writing, not impressing them with big words. Keep it simple and direct.`;
 
-const COMPOSITION_PROMPT = `Based on this research about "{interest}", create a compelling writing prompt.
+const COMPOSITION_PROMPT = `Based on this research about "{interest}", create a simple, direct writing prompt.
 
 RESEARCH FINDINGS:
 ---
@@ -51,20 +53,28 @@ Sources: {sources}
 ---
 
 Generate a writing prompt with:
-1. A HOOK (the title/headline) - 8-18 words, irresistible
-2. A BLURB (the setup) - 2-3 paragraphs in HTML format, include relevant links
+1. A HOOK (the title/headline) - 6-12 words, short and direct
+2. A BLURB (the setup) - 1-2 paragraphs in HTML format, keep it simple and conversational, include relevant links
 3. TAGS - 3-5 topic tags
 4. SUGGESTED ANGLES - 2-3 specific angles the writer could take
 
 Output in this exact JSON format:
 {
-  "hook": "Your compelling hook here",
-  "blurb": "<p>First paragraph...</p><p>Second paragraph...</p>",
+  "hook": "Your short, direct hook here",
+  "blurb": "<p>First paragraph - keep it simple...</p><p>Second paragraph if needed...</p>",
   "tags": ["tag1", "tag2", "tag3"],
   "suggestedAngles": ["Angle 1", "Angle 2", "Angle 3"]
 }
 
-Remember: The hook should make someone say "I NEED to write about this."`;
+Important guidelines:
+- Write like you're texting a friend, not writing an essay
+- Use everyday language - avoid academic or overly intellectual phrases
+- Keep the blurb under 120 words total (shorter is better)
+- Make it clear what's interesting without being fancy
+- The hook should be short and punchy, not wordy
+- Use short sentences. Be direct. Cut unnecessary words.
+- Examples of what NOT to say: "trapped in dusty lecture halls", "survival guide", "navigate a world", "desire for ancient wisdom"
+- Examples of what TO say: "philosophy used to be boring, now it's everywhere", "people are asking if AI can think", "ancient ideas are popular again"`;
 
 /**
  * Format sources for inclusion in the blurb
@@ -232,7 +242,7 @@ export class PromptComposerAgent {
    */
   private validateHook(hook: string, interest: string): string {
     if (!hook || typeof hook !== 'string') {
-      return `What ${interest} reveals about who we really are`;
+      return `What ${interest} tells us about ourselves`;
     }
     
     // Count words
@@ -246,7 +256,13 @@ export class PromptComposerAgent {
     if (wordCount > PROMPT_COMPOSER_CONFIG.hook.maxWords) {
       // Too long - truncate at sentence boundary if possible
       const sentences = hook.split(/[.!?]/);
-      return sentences[0] + (sentences[0].match(/[.!?]$/) ? '' : '.');
+      const firstSentence = sentences[0].trim();
+      // If still too long, truncate to first 12 words
+      const words = firstSentence.split(/\s+/);
+      if (words.length > PROMPT_COMPOSER_CONFIG.hook.maxWords) {
+        return words.slice(0, PROMPT_COMPOSER_CONFIG.hook.maxWords).join(' ');
+      }
+      return firstSentence + (firstSentence.match(/[.!?]$/) ? '' : '.');
     }
     
     return hook;
@@ -267,6 +283,12 @@ export class PromptComposerAgent {
       return paragraphs.map(p => `<p>${p.trim()}</p>`).join('');
     }
     
+    // Limit to max paragraphs
+    const paragraphs = blurb.match(/<p>[\s\S]*?<\/p>/g) || [];
+    if (paragraphs.length > PROMPT_COMPOSER_CONFIG.blurb.maxParagraphs) {
+      return paragraphs.slice(0, PROMPT_COMPOSER_CONFIG.blurb.maxParagraphs).join('');
+    }
+    
     return blurb;
   }
 
@@ -274,11 +296,15 @@ export class PromptComposerAgent {
    * Create a minimal blurb when content is missing
    */
   private createMinimalBlurb(research: ResearchReport): string {
-    const angle = research.interestingAngles[0] || 'this fascinating topic';
-    const trend = research.trends[0] || 'current developments';
+    const angle = research.interestingAngles[0] || 'this topic';
+    const trend = research.trends[0] || 'what\'s happening now';
     
-    return `<p>There's something happening in the world of ${research.interest.toLowerCase()} that demands our attention. ${research.summary}</p>
-<p>Consider ${angle}. With ${trend} shaping the conversation, now might be the perfect moment to add your voice.</p>`;
+    // Keep it simple and direct
+    const summary = research.summary.length > 100 
+      ? research.summary.substring(0, 100) + '...'
+      : research.summary;
+    
+    return `<p>Something interesting is happening with ${research.interest.toLowerCase()}. ${summary}</p>`;
   }
 
   /**
@@ -296,7 +322,7 @@ export class PromptComposerAgent {
    */
   private createFallbackComposition(research: ResearchReport): PromptContent {
     return {
-      hook: `The quiet revolution happening in ${research.interest.toLowerCase()}`,
+      hook: `What's happening with ${research.interest.toLowerCase()}?`,
       blurb: this.createMinimalBlurb(research),
       tags: [research.interest.toLowerCase().replace(/\s+/g, '-')],
       suggestedAngles: research.interestingAngles.slice(0, 3),

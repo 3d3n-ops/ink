@@ -15,9 +15,11 @@ import { getVisualComposerAgent } from '../services/prompt-engine/agents/visual-
 
 // Test interests (user preferences)
 const TEST_INTERESTS = [
-  'Artificial Intelligence',
-  'Climate Change',
-  'Personal Finance',
+  'Personal Growth',
+  'Investing',
+  'Relationships',
+  'Faith & spirituality',
+  'Travel',
 ];
 
 // ANSI color codes for pretty console output
