@@ -51,13 +51,19 @@ export default function QuoteRotator() {
       className="w-full h-[200px] sm:h-[250px] md:h-[300px] relative"
     >
       <div 
-        className="absolute inset-0 flex flex-col justify-start text-left transition-opacity duration-500"
+        className="absolute inset-0 flex flex-col justify-center text-center transition-opacity duration-500"
         style={{ opacity }}
       >
-        <p className="text-base sm:text-lg md:text-xl text-black mb-2 leading-relaxed">
+        <p 
+          className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-[#161210] mb-4 sm:mb-6 leading-relaxed"
+          style={{ fontFamily: "var(--font-eb-garamond), serif" }}
+        >
           &ldquo;{currentQuote.text}&rdquo;
         </p>
-        <p className="text-base sm:text-lg md:text-xl text-black">
+        <p 
+          className="text-base sm:text-lg md:text-xl text-[#161210]/70"
+          style={{ fontFamily: "var(--font-figtree), sans-serif" }}
+        >
           &mdash; {currentQuote.author}
         </p>
       </div>
