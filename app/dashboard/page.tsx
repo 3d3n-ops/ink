@@ -7,6 +7,7 @@ import WritingEntry from "../components/WritingEntry";
 import PromptCard from "../components/PromptCard";
 import PromptViewer from "../components/PromptViewer";
 import { useOnboardingCheck } from "../hooks/useOnboardingCheck";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 interface JournalEntry {
   id: string;
@@ -173,12 +174,16 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#FFFAF0]">
-      <Sidebar />
-
-      {/* Main Content Area - Centered Column */}
-      <main className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-2xl mx-auto">
+    <SidebarProvider>
+      <div className="flex min-h-screen bg-[#FFFAF0]">
+        <Sidebar />
+        <SidebarInset className="flex items-center justify-center p-8">
+          <div className="w-full max-w-2xl mx-auto">
+          {/* Sidebar Toggle Button */}
+          <div className="mb-8">
+            <SidebarTrigger className="mb-4" />
+          </div>
+          
           {/* Ink Logo */}
           <h1 className="text-7xl font-bold text-[#171717] mb-10 md:text-8xl">
             ink
@@ -293,16 +298,17 @@ export default function Dashboard() {
               New entry
             </button>
           </div>
-        </div>
-      </main>
+          </div>
+        </SidebarInset>
 
-      {/* Prompt Viewer overlay */}
-      {selectedPromptId && (
-        <PromptViewer
-          promptId={selectedPromptId}
-          onClose={handlePromptViewerClose}
-        />
-      )}
-    </div>
+        {/* Prompt Viewer overlay */}
+        {selectedPromptId && (
+          <PromptViewer
+            promptId={selectedPromptId}
+            onClose={handlePromptViewerClose}
+          />
+        )}
+      </div>
+    </SidebarProvider>
   );
 }

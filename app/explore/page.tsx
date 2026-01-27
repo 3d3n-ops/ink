@@ -2,6 +2,7 @@
 
 import Sidebar from "../components/Sidebar";
 import { useOnboardingCheck } from "../hooks/useOnboardingCheck";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 // Placeholder data for published writings on Ink
 const featuredWritings = [
@@ -85,21 +86,25 @@ export default function ExplorePage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#FFFAF0]">
-      <Sidebar />
+    <SidebarProvider>
+      <div className="flex min-h-screen bg-[#FFFAF0]">
+        <Sidebar />
 
-      {/* Main Content Area */}
-      <main className="flex-1 p-6 md:p-8 lg:p-12 overflow-y-auto">
-        <div className="max-w-4xl mx-auto">
-          {/* Page Header */}
-          <div className="mb-10">
-            <h1 className="text-3xl font-bold text-[#171717] mb-2 md:text-4xl">
-              Explore
-            </h1>
-            <p className="text-sm text-[#171717]/60 md:text-base">
-              Discover writings from the Ink community
-            </p>
-          </div>
+        {/* Main Content Area */}
+        <SidebarInset className="flex-1 p-6 md:p-8 lg:p-12 overflow-y-auto">
+          <div className="max-w-4xl mx-auto">
+            {/* Page Header */}
+            <div className="mb-10 flex items-center gap-4">
+              <SidebarTrigger />
+              <div>
+                <h1 className="text-3xl font-bold text-[#171717] mb-2 md:text-4xl">
+                  Explore
+                </h1>
+                <p className="text-sm text-[#171717]/60 md:text-base">
+                  Discover writings from the Ink community
+                </p>
+              </div>
+            </div>
 
           {/* Topics */}
           <section className="mb-10">
@@ -179,9 +184,10 @@ export default function ExplorePage() {
               More writings coming soon as the Ink community grows...
             </p>
           </section>
-        </div>
-      </main>
-    </div>
+          </div>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
 }
 

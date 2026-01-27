@@ -3,6 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Sidebar from "../../components/Sidebar";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 interface JournalEntry {
   id: string;
@@ -59,18 +60,21 @@ export default function EntryPage() {
   }, [slug]);
 
   return (
-    <div className="flex min-h-screen bg-[#FFFAF0]">
-      <Sidebar />
+    <SidebarProvider>
+      <div className="flex min-h-screen bg-[#FFFAF0]">
+        <Sidebar />
 
-      {/* Main Content Area - Centered like Substack */}
-      <main className="flex-1 flex flex-col">
+        {/* Main Content Area - Centered like Substack */}
+        <SidebarInset className="flex-1 flex flex-col">
         {/* Top Header Bar */}
         <div className="sticky top-0 z-20 bg-[#FFFAF0] border-b border-[#171717]/5">
           <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
-            <button
-              onClick={() => router.back()}
-              className="flex items-center gap-2 text-sm text-[#171717]/60 hover:text-[#171717] transition-colors"
-            >
+            <div className="flex items-center gap-3">
+              <SidebarTrigger />
+              <button
+                onClick={() => router.back()}
+                className="flex items-center gap-2 text-sm text-[#171717]/60 hover:text-[#171717] transition-colors"
+              >
               <svg
                 width="16"
                 height="16"
@@ -85,7 +89,8 @@ export default function EntryPage() {
                 <path d="M12 19l-7-7 7-7" />
               </svg>
               Back
-            </button>
+              </button>
+            </div>
 
             {/* Edit Button */}
             {entry && (
@@ -244,8 +249,9 @@ export default function EntryPage() {
             ) : null}
           </article>
         </div>
-      </main>
-    </div>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
 }
 

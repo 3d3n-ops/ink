@@ -8,6 +8,7 @@ import PromptViewer from "../components/PromptViewer";
 import { FaMedium, FaInstagram, FaXTwitter } from "react-icons/fa6";
 import { SiSubstack } from "react-icons/si";
 import { useOnboardingCheck } from "../hooks/useOnboardingCheck";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 // Generate slug from title
 function generateSlug(title: string): string {
@@ -169,35 +170,39 @@ function WritePageContent() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#FFFAF0]">
-      <Sidebar />
+    <SidebarProvider>
+      <div className="flex min-h-screen bg-[#FFFAF0]">
+        <Sidebar />
 
-      {/* Main Content Area - Centered like Substack */}
-      <main className="flex-1 flex flex-col">
-        {/* Top Header Bar */}
-        <div className="sticky top-0 z-20 bg-[#FFFAF0] border-b border-[#171717]/5">
-          <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
-            <button
-              onClick={() => router.back()}
-              className="flex items-center gap-2 text-sm text-[#171717]/60 hover:text-[#171717] transition-colors"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M19 12H5" />
-                <path d="M12 19l-7-7 7-7" />
-              </svg>
-              Back
-            </button>
-            
-            <div className="flex items-center gap-3">
+        {/* Main Content Area - Centered like Substack */}
+        <SidebarInset className="flex-1 flex flex-col">
+          {/* Top Header Bar */}
+          <div className="sticky top-0 z-20 bg-[#FFFAF0] border-b border-[#171717]/5">
+            <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <SidebarTrigger />
+                <button
+                  onClick={() => router.back()}
+                  className="flex items-center gap-2 text-sm text-[#171717]/60 hover:text-[#171717] transition-colors"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M19 12H5" />
+                    <path d="M12 19l-7-7 7-7" />
+                  </svg>
+                  Back
+                </button>
+              </div>
+              
+              <div className="flex items-center gap-3">
               {/* Word Counter */}
               <span className="text-xs text-[#171717]/40">
                 {wordCount} {wordCount === 1 ? "word" : "words"}
@@ -331,12 +336,12 @@ function WritePageContent() {
               >
                 {isSaving ? "Saving..." : isEditMode ? "Update entry" : "Save entry"}
               </button>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Centered Editor Container */}
-        <div className="flex-1 flex justify-center">
+          {/* Centered Editor Container */}
+          <div className="flex-1 flex justify-center">
           <div className="w-full max-w-3xl px-6 py-12">
             {/* Title Input */}
             <input
@@ -397,17 +402,18 @@ function WritePageContent() {
               />
             )}
           </div>
-        </div>
-      </main>
+          </div>
+        </SidebarInset>
 
-      {/* Prompt Viewer Modal */}
-      {showPromptViewer && promptId && (
-        <PromptViewer
-          promptId={promptId}
-          onClose={() => setShowPromptViewer(false)}
-        />
-      )}
-    </div>
+        {/* Prompt Viewer Modal */}
+        {showPromptViewer && promptId && (
+          <PromptViewer
+            promptId={promptId}
+            onClose={() => setShowPromptViewer(false)}
+          />
+        )}
+      </div>
+    </SidebarProvider>
   );
 }
 
