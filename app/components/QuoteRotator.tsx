@@ -48,16 +48,16 @@ export default function QuoteRotator() {
 
   return (
     <div 
-      className="w-full h-[300px] relative"
+      className="w-full h-[200px] sm:h-[250px] md:h-[300px] relative"
     >
       <div 
         className="absolute inset-0 flex flex-col justify-start text-left transition-opacity duration-500"
         style={{ opacity }}
       >
-        <p className="text-lg md:text-xl text-black mb-2 leading-relaxed">
+        <p className="text-base sm:text-lg md:text-xl text-black mb-2 leading-relaxed">
           &ldquo;{currentQuote.text}&rdquo;
         </p>
-        <p className="text-lg md:text-xl text-black">
+        <p className="text-base sm:text-lg md:text-xl text-black">
           &mdash; {currentQuote.author}
         </p>
       </div>
