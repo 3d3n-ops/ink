@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { EB_Garamond, Figtree } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next"
 
 const ebGaramond = EB_Garamond({
   variable: "--font-eb-garamond",
@@ -32,6 +33,7 @@ export default function RootLayout({
           className={`${ebGaramond.variable} ${figtree.variable} antialiased`}
         >
           {children}
+          <Analytics />
         </body>
       </html>
     </ClerkProvider>
